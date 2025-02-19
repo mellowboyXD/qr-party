@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- Coding By CodingNepal - youtube.com/codingnepal -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -12,7 +11,7 @@
   <div class="wrapper">
     <header>Upload Image/Video</header>
     <form action="#">
-      <input class="file-select" type="file" name="file" hidden>
+      <input class="file-select" onchange="uploadFile()" type="file" name="file" hidden>
       <i class="fas fa-cloud-upload-alt"></i>
       <p>Browse File to Upload</p>
     </form>
@@ -23,9 +22,81 @@
   
   const form = document.querySelector('form');
   const fileSelect = document.querySelector('.file-select');
+  const progressArea = document.querySelector('.progress-area');
+  const uploadArea = document.querySelector('.uploaded-area');
+
   form.addEventListener('click', async () => {
     fileSelect.click();
   })
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    uploadFile();
+  })
+
+  function uploadFile() {
+    const file = fileSelect.files[0];
+    let fileSize;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "http://localhost:3000/upload", true);
+
+    if (file.size < 1024) {
+      fileSize = `${(file.size).toFixed(2)} KB`;
+    } else {
+      fileSize = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        let fileLoaded = Math.floor((event.load/event.total) * 100);
+        let fileTotal = Math.floor(event.total/1000);
+        let progressHTML = `
+          <li class="row">
+            <i class="fas fa-file-alt"></i>
+            <div class="content">
+              <div class="details">
+                <span class="name">${file.name}</span>
+                <span class="percent">${fileLoaded}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress" style="width: ${fileLoaded}"></div>
+              </div>
+            </div>
+          </li>`;
+        uploadArea.classList.add("onprogress");
+        progressArea.innerHTML = progressHTML;
+    } else {
+      progressArea.innerHTML = "Error";
+    }
+    });
+
+    xhr.onload = (event) => {
+      if (xhr.status === 200) {
+        progressArea.innerHTML = "";
+        let uploadedHTML = `
+        <li class="row">
+          <div class="content upload">
+            <i class="fas fa-file-alt"></i>
+            <div class="details">
+              <span class="name">${file.name} ~ Uploaded</span>
+              <span class="size">${fileSize}</span>
+            </div>
+          </div>
+          <i class="fas fa-check"></i>
+        </li>`;
+        uploadArea.classList.remove("onprogress");
+        uploadArea.insertAdjacentHTML("afterbegin", uploadedHTML);
+      }
+    };
+
+    xhr.onerror = () => console.error("Upload Error");
+
+    xhr.send(formData);
+  }
+
 </script>
 </body>
 </html>
